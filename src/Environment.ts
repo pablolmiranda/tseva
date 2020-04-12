@@ -2,10 +2,13 @@ import { Atom } from './eva';
 
 class Environment {
   record: Record<string, any>;
+  parentRecord?: Environment;
 
-  constructor(initialRecord = {}) {
+  constructor(initialRecord = {}, parent?: Environment) {
     this.record = initialRecord;
+    this.parentRecord = parent;
   }
+
   define(key: string, value: Atom) {
     this.record[key] = value;
     return value;

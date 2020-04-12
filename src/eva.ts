@@ -2,8 +2,15 @@ import Environment from './Environment';
 
 type Operators = '+' | '-' | '*';
 
-export type BlockDefinition = ['begin', ...Expression[]];
-export type VariableDefinition = ['var', string, Expression];
+enum Tokens {
+  VAR = 'var',
+  BEGIN = 'begin',
+}
+
+const VARIABLE_NAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+
+export type BlockDefinition = [Tokens.BEGIN, ...Expression[]];
+export type VariableDefinition = [Tokens.VAR, string, Expression];
 export type OperatorDefinition = [Operators, Expression, Expression];
 export type Atom = string | number;
 export type Expression =
@@ -19,7 +26,9 @@ class Eva {
     this.global = env;
   }
 
-  eval(exp: Expression) {
+  eval(exp: Expression, _env: Environment) {
+    const env = _env || this.global;
+
     if (this.isNumeric(exp)) {
       return exp;
     }
@@ -29,45 +38,46 @@ class Eva {
     }
 
     if (exp[0] === '+') {
-      return this.eval(exp[1]) + this.eval(exp[2]);
+      return this.eval(exp[1], env) + this.eval(exp[2], env);
     }
 
     if (exp[0] === '-') {
-      return this.eval(exp[1]) - this.eval(exp[2]);
+      return this.eval(exp[1], env) - this.eval(exp[2], env);
     }
 
     if (exp[0] === '*') {
-      return this.eval(exp[1]) * this.eval(exp[2]);
+      return this.eval(exp[1], env) * this.eval(exp[2], env);
     }
 
     if (this.isVariableDefinition(exp)) {
       const [def, name, value]: VariableDefinition = exp;
-      return this.global.define(name, this.eval(value));
+      return env.define(name, this.eval(value, env));
     }
 
     if (this.isVariableName(exp)) {
-      return this.global.lookup(exp);
+      return env.lookup(exp);
     }
 
     if (this.isBlockExpression(exp)) {
       const [keyword, ...blockExpressions] = exp;
-      return this.evalBlock(blockExpressions);
+      return this.evalBlock(blockExpressions, env);
     }
 
     throw Error(`could not evaluate the following expression:\n ${exp}`);
   }
 
-  evalBlock(blockExpressions: Expression[]) {
+  evalBlock(blockExpressions: Expression[], env: Environment) {
     let result;
+    const blockEnv = new Environment({}, env);
     blockExpressions.forEach((blockExpression) => {
-      result = this.eval(blockExpression);
+      result = this.eval(blockExpression, blockEnv);
     });
 
     return result;
   }
 
   isBlockExpression(exp: Expression): exp is BlockDefinition {
-    return exp[0] === 'begin';
+    return exp[0] === Tokens.BEGIN;
   }
 
   isNumeric(exp: Expression): Boolean {
@@ -79,11 +89,11 @@ class Eva {
   }
 
   isVariableDefinition(exp: Expression): exp is VariableDefinition {
-    return exp[0] === 'var';
+    return exp[0] === Tokens.VAR;
   }
 
   isVariableName(exp: Expression): exp is string {
-    return typeof exp === 'string' && /^[a-zA-Z][a-zA-Z0-9_]*$/.test(exp);
+    return typeof exp === 'string' && VARIABLE_NAME_REGEX.test(exp);
   }
 }
 
