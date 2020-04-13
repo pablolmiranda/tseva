@@ -30,7 +30,7 @@ class Eva {
     const env = _env || this.global;
 
     if (this.isNumeric(exp)) {
-      return exp;
+      return exp as Atom;
     }
 
     if (this.isString(exp)) {

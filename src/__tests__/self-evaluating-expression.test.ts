@@ -1,4 +1,4 @@
-import Eva from '..';
+import Eva from '../eva';
 
 let eva;
 beforeAll(() => {

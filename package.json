@@ -4,6 +4,7 @@
   "description": "Eva language implementation in TypeScript",
   "main": "build/index.js",
   "scripts": {
+    "build": "tsc",
     "run": "tsc && node build/index.js",
     "test": "jest"
   },
