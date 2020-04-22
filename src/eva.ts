@@ -3,26 +3,75 @@ import Environment from './Environment';
 type Operators = '+' | '-' | '*';
 
 enum Tokens {
-  VAR = 'var',
+  DEF = 'def',
   BEGIN = 'begin',
+  VAR = 'var',
 }
 
-const VARIABLE_NAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+const VARIABLE_NAME_REGEX = /^[+\-*a-zA-Z][a-zA-Z0-9_]*$/;
 
 export type BlockDefinition = [Tokens.BEGIN, ...Expression[]];
-export type VariableDefinition = [Tokens.VAR, string, Expression];
+export type FunctionDeclaration = [Tokens.DEF, ...Expression[]];
+export type FunctionObject = {
+  params: Expression;
+  body: Expression;
+  env: Environment;
+};
 export type OperatorDefinition = [Operators, Expression, Expression];
+export type VariableDefinition = [Tokens.VAR, string, Expression];
 export type Atom = string | number;
 export type Expression =
   | Atom
   | BlockDefinition
+  | FunctionDeclaration
   | OperatorDefinition
   | VariableDefinition;
+
+const GlobalEnvironment = new Environment({
+  false: false,
+  true: true,
+
+  '+'(op1, op2) {
+    return op1 + op2;
+  },
+
+  '-'(op1, op2) {
+    return op1 - op2;
+  },
+
+  '*'(op1, op2) {
+    return op1 * op2;
+  },
+
+  '>'(op1, op2) {
+    return op1 > op2;
+  },
+
+  '>='(op1, op2) {
+    return op1 >= op2;
+  },
+
+  '<'(op1, op2) {
+    return op1 < op2;
+  },
+
+  '<='(op1, op2) {
+    return op1 <= op2;
+  },
+
+  '&&'(op1, op2) {
+    return op1 && op2;
+  },
+
+  '||'(op1, op2) {
+    return op1 || op2;
+  },
+});
 
 class Eva {
   global: Environment;
 
-  constructor(env = new Environment({})) {
+  constructor(env = GlobalEnvironment) {
     this.global = env;
   }
 
@@ -35,18 +84,6 @@ class Eva {
 
     if (this.isString(exp)) {
       return exp.slice(1, -1);
-    }
-
-    if (exp[0] === '+') {
-      return this.eval(exp[1], env) + this.eval(exp[2], env);
-    }
-
-    if (exp[0] === '-') {
-      return this.eval(exp[1], env) - this.eval(exp[2], env);
-    }
-
-    if (exp[0] === '*') {
-      return this.eval(exp[1], env) * this.eval(exp[2], env);
     }
 
     if (this.isVariableDefinition(exp)) {
@@ -63,6 +100,38 @@ class Eva {
       return this.evalBlock(blockExpressions, env);
     }
 
+    if (this.isUserDefinedFunction(exp)) {
+      const [_tag, name, params, body] = exp;
+
+      const fn = {
+        params,
+        body,
+        env,
+      };
+      return env.define(name as string, fn);
+    }
+
+    // Function expressions
+    if (Array.isArray(exp)) {
+      const [name, ...args] = exp;
+      const fn = this.eval(name, env);
+
+      if (typeof fn === 'function') {
+        const fnArgs = args.map((arg) => this.eval(arg, env));
+        return fn(...fnArgs);
+      }
+
+      // User defined function
+      const activationRecord = {};
+      const { body, env: fnEnv, params } = fn;
+      params.forEach((param, index) => {
+        activationRecord[param] = args[index];
+      });
+
+      const activationEnv = new Environment(activationRecord, fnEnv);
+      return this.evalFunctionBody(body, activationEnv);
+    }
+
     throw Error(`could not evaluate the following expression:\n ${exp}`);
   }
 
@@ -76,6 +145,14 @@ class Eva {
     return result;
   }
 
+  evalFunctionBody(body: Expression, env: Environment) {
+    if (this.isBlockExpression(body)) {
+      const [tag, ...blockExpressions] = body;
+      return this.evalBlock(blockExpressions, env);
+    }
+    return this.eval(body, env);
+  }
+
   isBlockExpression(exp: Expression): exp is BlockDefinition {
     return exp[0] === Tokens.BEGIN;
   }
@@ -86,6 +163,10 @@ class Eva {
 
   isString(exp: Expression): exp is string {
     return typeof exp === 'string' && exp[0] === '"' && exp.slice(-1) === '"';
+  }
+
+  isUserDefinedFunction(exp: Expression): exp is FunctionDeclaration {
+    return exp[0] === Tokens.DEF;
   }
 
   isVariableDefinition(exp: Expression): exp is VariableDefinition {

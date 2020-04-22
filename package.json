@@ -34,5 +34,10 @@
   },
   "dependencies": {
     "@types/jest": "^25.2.1"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "src/__tests__/util.ts"
+    ]
   }
 }
