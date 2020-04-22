@@ -1,4 +1,5 @@
 import Eva from '../eva';
+import { miniParser } from './util';
 
 let eva;
 beforeAll(() => {
@@ -6,17 +7,22 @@ beforeAll(() => {
 });
 
 test('evaluate numbers', () => {
-  expect(eva.eval(1)).toBe(1);
-  expect(eva.eval(10)).toBe(10);
+  const exp1 = miniParser(`1`);
+  expect(eva.eval(exp1)).toBe(1);
+
+  const exp2 = miniParser(`10`);
+  expect(eva.eval(exp2)).toBe(10);
 });
 
 test('evalute string', () => {
-  expect(eva.eval('"Hello World"')).toBe('Hello World');
+  const exp1 = miniParser(`"Hello World"`);
+  expect(eva.eval(exp1)).toBe('Hello World');
 });
 
 describe('operators', () => {
   test('evaluate +', () => {
-    expect(eva.eval(['+', 1, 2])).toBe(3);
+    const exp = miniParser(`(+ 1 2)`);
+    expect(eva.eval(exp)).toBe(3);
   });
 
   test('evaluate -', () => {
