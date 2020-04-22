@@ -106,12 +106,12 @@ class Eva {
     if (this.isUserDefinedFunction(exp)) {
       const [_tag, name, params, body] = exp;
 
-      const fn = {
-        params,
-        body,
-        env,
-      };
-      return env.define(name as string, fn);
+      const fnExp: VariableDefinition = [
+        Tokens.VAR,
+        name as string,
+        [Tokens.LAMBDA, params, body],
+      ];
+      return this.eval(fnExp, env);
     }
 
     if (this.isLambdaFunctionExpression(exp)) {
