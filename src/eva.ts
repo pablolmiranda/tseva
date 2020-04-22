@@ -90,7 +90,7 @@ class Eva {
     }
 
     if (this.isVariableDefinition(exp)) {
-      const [def, name, value]: VariableDefinition = exp;
+      const [_tag, name, value]: VariableDefinition = exp;
       return env.define(name, this.eval(value, env));
     }
 
@@ -99,7 +99,7 @@ class Eva {
     }
 
     if (this.isBlockExpression(exp)) {
-      const [keyword, ...blockExpressions] = exp;
+      const [_tag, ...blockExpressions] = exp;
       return this.evalBlock(blockExpressions, env);
     }
 
@@ -160,7 +160,7 @@ class Eva {
 
   evalFunctionBody(body: Expression, env: Environment) {
     if (this.isBlockExpression(body)) {
-      const [tag, ...blockExpressions] = body;
+      const [_tag, ...blockExpressions] = body;
       return this.evalBlock(blockExpressions, env);
     }
     return this.eval(body, env);
