@@ -3,8 +3,9 @@ import Environment from './Environment';
 type Operators = '+' | '-' | '*';
 
 enum Tokens {
-  DEF = 'def',
   BEGIN = 'begin',
+  DEF = 'def',
+  LAMBDA = 'lambda',
   VAR = 'var',
 }
 
@@ -17,6 +18,7 @@ export type FunctionObject = {
   body: Expression;
   env: Environment;
 };
+export type LambdaFunctionExpression = [Tokens.LAMBDA, ...Expression[]];
 export type OperatorDefinition = [Operators, Expression, Expression];
 export type VariableDefinition = [Tokens.VAR, string, Expression];
 export type Atom = string | number;
@@ -24,6 +26,7 @@ export type Expression =
   | Atom
   | BlockDefinition
   | FunctionDeclaration
+  | LambdaFunctionExpression
   | OperatorDefinition
   | VariableDefinition;
 
@@ -111,6 +114,16 @@ class Eva {
       return env.define(name as string, fn);
     }
 
+    if (this.isLambdaFunctionExpression(exp)) {
+      const [_tag, params, body] = exp;
+
+      return {
+        params,
+        body,
+        env,
+      };
+    }
+
     // Function expressions
     if (Array.isArray(exp)) {
       const [name, ...args] = exp;
@@ -155,6 +168,10 @@ class Eva {
 
   isBlockExpression(exp: Expression): exp is BlockDefinition {
     return exp[0] === Tokens.BEGIN;
+  }
+
+  isLambdaFunctionExpression(exp: Expression): exp is LambdaFunctionExpression {
+    return exp[0] === Tokens.LAMBDA;
   }
 
   isNumeric(exp: Expression): Boolean {

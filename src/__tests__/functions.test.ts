@@ -22,4 +22,11 @@ describe('functions', () => {
     eva.eval(['def', 'run', ['x'], ['begin', ['var', 'x', 7], 'x']]);
     expect(eva.eval(['run'])).toBe(7);
   });
+
+  describe('lambdas', () => {
+    test('evaluate simple lambda expressions', () => {
+      eva.eval(['var', 'foo', ['lambda', ['x'], ['+', 'x', 1]]]);
+      expect(eva.eval(['foo', 1])).toBe(2);
+    });
+  });
 });
